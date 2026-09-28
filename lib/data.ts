@@ -1,0 +1,193 @@
+import { promises as fs } from 'fs';
+import path from 'path';
+import type { Customer, Ticket } from './types';
+
+export const seedCustomers: Customer[] = [
+  {
+    id: 'acme',
+    name: 'Acme Cloud',
+    company: 'Acme Cloud',
+    email: 'ops@acme.example',
+    status: 'Active',
+    lastInteraction: '2024-05-15T11:45:00Z',
+    openIssue: 'Deployment failures after configuration update',
+    environment: ['AWS', 'EKS', 'Node.js 22'],
+    issues: ['Container memory pressure', 'Deployment drift after config change'],
+    preferences: ['Avoid downtime during production changes', 'Schedule changes outside business hours'],
+    tickets: [
+      {
+        id: '1042',
+        customerId: 'acme',
+        summary: 'Deployment failures after configuration update',
+        status: 'Open',
+        createdAt: '2024-05-10T09:00:00Z',
+        updatedAt: '2024-05-10T10:30:00Z',
+        priority: 'high',
+        messages: [
+          { id: 'm-1042-1', speaker: 'customer', text: 'Our deployment is failing again after the latest configuration update.', createdAt: '2024-05-10T09:00:00Z' },
+          { id: 'm-1042-2', speaker: 'agent', text: 'I can help. We should check if the new config increased memory pressure in the cluster.', createdAt: '2024-05-10T09:10:00Z' },
+          { id: 'm-1042-3', speaker: 'customer', text: 'The pods are restarting and the init logs show OOMKilled.', createdAt: '2024-05-10T09:16:00Z' },
+          { id: 'm-1042-4', speaker: 'agent', text: 'This matches a previous memory-pressure issue. Increase container memory allocation and redeploy.', createdAt: '2024-05-10T09:26:00Z' },
+          { id: 'm-1042-5', speaker: 'customer', text: 'We increased the container memory from 512 MB to 1 GB and it stabilized.', createdAt: '2024-05-10T10:00:00Z' },
+        ],
+      },
+      {
+        id: '1097',
+        customerId: 'acme',
+        summary: 'Production changes should be outside business hours',
+        status: 'Resolved',
+        createdAt: '2024-04-22T17:00:00Z',
+        updatedAt: '2024-04-22T18:05:00Z',
+        priority: 'medium',
+        messages: [
+          { id: 'm-1097-1', speaker: 'customer', text: 'Please avoid production changes during business hours if possible.', createdAt: '2024-04-22T17:00:00Z' },
+          { id: 'm-1097-2', speaker: 'agent', text: 'Understood. We will schedule changes outside business hours and keep you posted.', createdAt: '2024-04-22T17:08:00Z' },
+        ],
+      },
+      {
+        id: '1148',
+        customerId: 'acme',
+        summary: 'New deployment failure after configuration change',
+        status: 'In progress',
+        createdAt: '2024-05-15T09:45:00Z',
+        updatedAt: '2024-05-15T10:15:00Z',
+        priority: 'high',
+        messages: [
+          { id: 'm-1148-1', speaker: 'customer', text: 'The deployment is failing again after today\'s configuration update.', createdAt: '2024-05-15T09:45:00Z' },
+          { id: 'm-1148-2', speaker: 'agent', text: 'I am checking whether this matches a previous memory-pressure incident.', createdAt: '2024-05-15T09:46:00Z' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'northstar',
+    name: 'Northstar Labs',
+    company: 'Northstar Labs',
+    email: 'ops@northstar.example',
+    status: 'Monitoring',
+    lastInteraction: '2024-05-14T15:10:00Z',
+    openIssue: 'Staging deployment failures during schema migrations',
+    environment: ['Azure', 'Kubernetes', 'Postgres'],
+    issues: ['Schema migration locks', 'Staging-only API latency'],
+    preferences: ['Avoid migrations during business hours'],
+    tickets: [
+      {
+        id: '2041',
+        customerId: 'northstar',
+        summary: 'Staging deployment failures during schema migration',
+        status: 'Monitoring',
+        createdAt: '2024-04-03T10:00:00Z',
+        updatedAt: '2024-04-03T11:15:00Z',
+        priority: 'medium',
+        messages: [
+          { id: 'm-2041-1', speaker: 'customer', text: 'The app cannot finish the schema migration in staging.', createdAt: '2024-04-03T10:00:00Z' },
+          { id: 'm-2041-2', speaker: 'agent', text: 'We will review the migration lock timing and verify the health check thresholds.', createdAt: '2024-04-03T10:12:00Z' },
+        ],
+      },
+      {
+        id: '2107',
+        customerId: 'northstar',
+        summary: 'Latency spike under load in staging',
+        status: 'Resolved',
+        createdAt: '2024-04-14T16:40:00Z',
+        updatedAt: '2024-04-14T17:10:00Z',
+        priority: 'low',
+        messages: [
+          { id: 'm-2107-1', speaker: 'customer', text: 'Staging is slow after we increased the worker pool.', createdAt: '2024-04-14T16:40:00Z' },
+          { id: 'm-2107-2', speaker: 'agent', text: 'We reduced the worker concurrency and the latency returned to baseline.', createdAt: '2024-04-14T17:02:00Z' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'meridian',
+    name: 'Meridian Health Systems',
+    company: 'Meridian Health Systems',
+    email: 'support@meridian.example',
+    status: 'Escalated',
+    lastInteraction: '2024-05-12T08:05:00Z',
+    openIssue: 'API latency after data pipeline restart',
+    environment: ['GCP', 'Kubernetes', 'Redis'],
+    issues: ['Pipeline restart cache invalidation', 'Read replica sync lag'],
+    preferences: ['Keep patient data access stable during validation windows'],
+    tickets: [
+      {
+        id: '3032',
+        customerId: 'meridian',
+        summary: 'API latency after data pipeline restart',
+        status: 'Escalated',
+        createdAt: '2024-05-08T09:00:00Z',
+        updatedAt: '2024-05-12T08:05:00Z',
+        priority: 'high',
+        messages: [
+          { id: 'm-3032-1', speaker: 'customer', text: 'The API is slow after the data pipeline restart and response times are elevated.', createdAt: '2024-05-08T09:00:00Z' },
+          { id: 'm-3032-2', speaker: 'agent', text: 'We are validating the cache invalidation path and connection pool saturation.', createdAt: '2024-05-08T09:14:00Z' },
+        ],
+      },
+    ],
+  },
+];
+
+export const DATA_FILE = path.join(process.cwd(), 'data', 'app-data.json');
+
+export async function readData(): Promise<{ customers: Customer[] }> {
+  try {
+    const raw = await fs.readFile(DATA_FILE, 'utf-8');
+    const data = JSON.parse(raw) as { customers: Customer[] };
+    return { customers: data.customers ?? seedCustomers };
+  } catch {
+    await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
+    await fs.writeFile(DATA_FILE, JSON.stringify({ customers: seedCustomers }, null, 2));
+    return { customers: seedCustomers };
+  }
+}
+
+export async function writeData(customers: Customer[]): Promise<void> {
+  await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
+  await fs.writeFile(DATA_FILE, JSON.stringify({ customers }, null, 2));
+}
+
+export async function getCustomerById(customerId: string): Promise<Customer | undefined> {
+  const { customers } = await readData();
+  return customers.find((customer) => customer.id === customerId);
+}
+
+export async function upsertTicketMessage(customerId: string, messageText: string, speaker: 'customer' | 'agent'): Promise<Customer | undefined> {
+  const { customers } = await readData();
+  const customer = customers.find((entry) => entry.id === customerId);
+  if (!customer) {
+    return undefined;
+  }
+
+  const lastTicket = customer.tickets[customer.tickets.length - 1];
+  const ticketId = `${Date.now()}`.slice(-4);
+  const now = new Date().toISOString();
+
+  const newTicket: Ticket = {
+    id: ticketId,
+    customerId,
+    summary: 'Follow-up support interaction',
+    status: 'Open',
+    createdAt: now,
+    updatedAt: now,
+    priority: 'medium',
+    messages: [{ id: `message-${Date.now()}`, speaker, text: messageText, createdAt: now }],
+  };
+
+  if (lastTicket && lastTicket.status !== 'Resolved') {
+    const updated = customer.tickets.map((ticket) =>
+      ticket.id === lastTicket.id ? { ...ticket, updatedAt: now, messages: [...ticket.messages, { id: `message-${Date.now()}`, speaker, text: messageText, createdAt: now }] } : ticket,
+    );
+    customer.tickets = updated;
+    customer.lastInteraction = now;
+    customer.openIssue = messageText;
+    await writeData(customers);
+    return customer;
+  }
+
+  customer.tickets = [newTicket, ...customer.tickets];
+  customer.lastInteraction = now;
+  customer.openIssue = messageText;
+  await writeData(customers);
+  return customer;
+}
