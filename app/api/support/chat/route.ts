@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { canAccessProject, getCurrentUser } from '@/lib/auth';
 import { getCustomerById } from '@/lib/data';
+import { generateSupportReply, SupportAgentError } from '@/lib/agent';
 import { retrieveMemories } from '@/lib/memory';
-import { createSupportReply, selectRelevantMemories } from '@/lib/support';
+import { selectRelevantMemories } from '@/lib/support';
 import { projectWorkspaces } from '@/lib/workspace';
 
 export async function POST(request: Request) {
@@ -14,8 +15,12 @@ export async function POST(request: Request) {
     const customerId = String(body.customerId ?? '').trim();
     const message = String(body.message ?? '').trim();
     const caseId = String(body.caseId ?? '').trim();
+    const mode = body.mode ?? 'with-memory';
     if (!customerId || !message || message.length > 8000) {
       return NextResponse.json({ error: 'customerId and a message of at most 8000 characters are required.' }, { status: 400 });
+    }
+    if (mode !== 'with-memory' && mode !== 'without-memory') {
+      return NextResponse.json({ error: 'mode must be with-memory or without-memory.' }, { status: 400 });
     }
 
     const requestedProjectId = String(body.projectId ?? '').trim();
@@ -29,20 +34,28 @@ export async function POST(request: Request) {
     const ticket = caseId ? customer.tickets.find((entry) => entry.id === caseId) : undefined;
     if (caseId && !ticket) return NextResponse.json({ error: 'Case does not belong to the requested customer.' }, { status: 404 });
 
-    const recall = await retrieveMemories(customerId, message);
-    const memoriesUsed = selectRelevantMemories(recall.results, message, customerId);
-    const baseResponse = createSupportReply({
-      mode: 'with-memory',
-      customerName: customer.name,
-      issue: message,
-      memories: memoriesUsed,
-    });
+    const recall = mode === 'with-memory'
+      ? await retrieveMemories(customerId, message)
+      : { available: false, results: [] };
+    const memoriesUsed = mode === 'with-memory'
+      ? selectRelevantMemories(recall.results, message, customerId)
+      : [];
     const applicableRequirement = customerProject.requirements.find((requirement) => requirement.status !== 'Proposed');
-    const response = [
-      baseResponse,
-      applicableRequirement ? `Project requirement to verify: ${applicableRequirement.id} - ${applicableRequirement.description}` : '',
-      customerProject.cloud.diagnostics[0] ? `Available cloud context: ${customerProject.cloud.diagnostics[0]}` : '',
-    ].filter(Boolean).join('\n\n');
+    const response = await generateSupportReply({
+      mode,
+      customerName: customer.name,
+      projectName: customerProject.name,
+      caseId: ticket?.id ?? '',
+      issue: message,
+      ticket,
+      memories: memoriesUsed,
+      requirements: customerProject.requirements
+        .filter((requirement) => requirement.status !== 'Proposed')
+        .map((requirement) => `${requirement.id}: ${requirement.description} (${requirement.status})`),
+      constraints: customerProject.constraints,
+      repositories: customerProject.repositories.map(({ name, branch, context, lastDeployment }) => ({ name, branch, context, lastDeployment })),
+      cloud: customerProject.cloud,
+    });
 
     const recommendedActions = [
       'Compare the current deployment configuration with the last known-good version.',
@@ -64,12 +77,16 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       response,
+      mode,
       memoriesUsed,
       recommendedActions,
       memoryCandidates,
-      memoryStatus: recall.available && !recall.error ? 'available' : 'unavailable',
+      memoryStatus: mode === 'without-memory' ? 'disabled' : recall.available && !recall.error ? 'available' : 'unavailable',
     });
   } catch (error) {
+    if (error instanceof SupportAgentError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Unable to process support chat.' }, { status: 500 });
   }
 }

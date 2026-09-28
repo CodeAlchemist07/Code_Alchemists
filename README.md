@@ -79,6 +79,7 @@ Required for the Hindsight-enabled flow:
 Optional for response generation:
 
 - `OPENAI_API_KEY`
+- `OPENAI_BASE_URL` — optional OpenAI-compatible API base URL; defaults to `https://api.openai.com/v1`
 - `OPENAI_MODEL`
 - `NEXT_PUBLIC_APP_NAME`
 
@@ -100,6 +101,7 @@ Inside the workspace:
 - the case queue selects a dedicated customer case context
 - the case detail shows environment, known issues, previous fixes, and customer preferences
 - the memory mode switch controls whether the backend performs Hindsight recall
+- the support agent uses `OPENAI_MODEL` for evidence-grounded response generation; `OPENAI_API_KEY` is required, and a missing key returns a configuration error instead of a canned answer
 - completed support interactions are retained into the customer's Hindsight bank when configured
 - the "I'm stuck" workflow routes the employee to requirements, teammate, repository, or cloud context
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildCustomerBankId, buildTicketDocumentId, buildTicketText, createSupportReply, selectRelevantMemories } from '../lib/support';
+import { buildCustomerBankId, buildTicketDocumentId, buildTicketText, selectRelevantMemories } from '../lib/support';
 
 describe('SupportMemory memory flow', () => {
   it('retains ticket content in a deterministic bank and document layout', () => {
@@ -13,8 +13,8 @@ describe('SupportMemory memory flow', () => {
       status: 'Open',
       createdAt: '2024-05-12T09:00:00Z',
       messages: [
-        { speaker: 'customer', text: 'Deployment is failing again.', createdAt: '2024-05-12T09:00:00Z' },
-        { speaker: 'agent', text: 'We need to inspect memory pressure.', createdAt: '2024-05-12T09:05:00Z' },
+        { id: 'm1', speaker: 'customer', text: 'Deployment is failing again.', createdAt: '2024-05-12T09:00:00Z' },
+        { id: 'm2', speaker: 'agent', text: 'We need to inspect memory pressure.', createdAt: '2024-05-12T09:05:00Z' },
       ],
     })).toContain('Ticket #1042');
   });
@@ -31,42 +31,4 @@ describe('SupportMemory memory flow', () => {
     expect(results[0].id).toBe('m1');
   });
 
-  it('generates memory-aware support response when relevant recall is available', () => {
-    const response = createSupportReply({
-      mode: 'with-memory',
-      customerName: 'Acme Cloud',
-      issue: 'The deployment is failing again after today\'s configuration update.',
-      memories: [
-        { id: 'm1', text: 'Previous deployment failure here was caused by container memory exhaustion.', document_id: 'ticket-1042', metadata: { customer: 'acme' } },
-        { id: 'm2', text: 'Customer prefers production changes outside business hours.', document_id: 'ticket-1097', metadata: { customer: 'acme' } },
-      ],
-    });
-
-    expect(response).toContain('Ticket #1042');
-    expect(response).toContain('memory exhaustion');
-    expect(response).toContain('outside business hours');
-  });
-
-  it('generates a generic response without memory', () => {
-    const response = createSupportReply({
-      mode: 'without-memory',
-      customerName: 'Acme Cloud',
-      issue: 'The deployment is failing again after today\'s configuration update.',
-      memories: [],
-    });
-
-    expect(response).toContain('I can help');
-    expect(response).not.toContain('Ticket #1042');
-  });
-
-  it('does not claim historical evidence when recall has no relevant result', () => {
-    const response = createSupportReply({
-      mode: 'with-memory',
-      customerName: 'Acme Cloud',
-      issue: 'A deployment is failing.',
-      memories: [],
-    });
-
-    expect(response).toContain('do not have a relevant historical incident');
-  });
 });

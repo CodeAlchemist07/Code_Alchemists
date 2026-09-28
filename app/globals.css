@@ -979,6 +979,9 @@ textarea {
 .panel-title { font-weight: 700; margin-bottom: 14px; }
 .conversation-panel textarea { margin-top: 14px; }
 .conversation-panel .primary-btn { margin-top: 10px; }
+.memory-mode { display: flex; margin: 0 0 12px; border: 1px solid var(--line); width: fit-content; }
+.memory-mode button { padding: 7px 10px; border: 0; background: var(--panel); color: var(--text-soft); cursor: pointer; }
+.memory-mode button[aria-pressed="true"] { background: var(--accent); color: #fff; }
 .context-checks { display: grid; gap: 8px; color: var(--success); font-size: 0.84rem; margin-bottom: 16px; }
 .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
 .action-grid button,
