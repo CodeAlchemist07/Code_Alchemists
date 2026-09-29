@@ -118,4 +118,4 @@ The seeded data includes Acme Cloud, Northstar Labs, and Meridian Health Systems
 ## Limitations
 
 This repo intentionally does not claim production readiness. It is a deliberate demo implementation designed to make the Hindsight memory path inspectable and demonstrable. The local app uses static seed data and is best suited for local validation and engineering review rather than production deployment.
-# Code_Alchemists
+# AI_Alchemists
